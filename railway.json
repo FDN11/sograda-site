@@ -1,4 +1,9 @@
 {
-  "build": { "builder": "STATIC" },
-  "deploy": { "startCommand": "npx serve . -l $PORT" }
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "npx serve . -l $PORT"
+  }
 }
