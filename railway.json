@@ -1,0 +1,4 @@
+{
+  "build": { "builder": "STATIC" },
+  "deploy": { "startCommand": "npx serve . -l $PORT" }
+}
