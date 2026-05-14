@@ -2052,22 +2052,38 @@
         reader.readAsDataURL(file);
       });
       const B24 = 'https://sograda.bitrix24.ru/rest/17/j3ir302dfmqau6j1';
-      const storResp = await fetch(`${B24}/disk.storage.getlist.json`);
+
+      // Step 1: get user storage root folder ID
+      const storResp = await fetch(`${B24}/disk.storage.getlist.json?start=0`);
       const storData = await storResp.json();
-      const userStorage = (storData.result || []).find(s => s.ENTITY_TYPE === 'user');
-      if (!userStorage) throw new Error('Storage not found');
+      const storages = storData.result || [];
+
+      // Prefer user storage, fall back to first available
+      const storage = storages.find(s =>
+        s.ENTITY_TYPE === 'user' || s.ENTITY_TYPE === 'User'
+      ) || storages[0];
+
+      if (!storage || !storage.ROOT_OBJECT) {
+        throw new Error('Disk storage not found. storages=' + JSON.stringify(storages.map(s => s.ENTITY_TYPE)));
+      }
+
+      const folderId = storage.ROOT_OBJECT.ID;
+
+      // Step 2: upload file
       const uploadResp = await fetch(`${B24}/disk.folder.uploadfile.json`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: userStorage.ROOT_OBJECT.ID,
+          id: folderId,
           data: { NAME: file.name },
           fileContent: [file.name, base64]
         })
       });
       const uploadData = await uploadResp.json();
-      if (!uploadData.result) throw new Error('Upload failed');
-      return uploadData.result.DETAIL_URL || file.name;
+      if (!uploadData.result) {
+        throw new Error('Upload failed: ' + JSON.stringify(uploadData));
+      }
+      return uploadData.result.DETAIL_URL || ('Файл: ' + file.name);
     }
 
     // Burger menu
@@ -2211,7 +2227,11 @@
         btn.textContent = 'Загружаем файл...';
         uploadFileToBitrix(file)
           .then(url => { btn.textContent = 'Отправляем...'; doSend(url); })
-          .catch(() => doSend(null));
+          .catch(err => {
+            // Upload failed — send lead anyway with filename as text
+            console.warn('File upload failed:', err);
+            doSend('⚠️ Файл не загружен (ошибка): ' + file.name);
+          });
       } else {
         doSend(null);
       }
