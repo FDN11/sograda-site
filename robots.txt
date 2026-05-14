@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://metall-sograda.ru/sitemap.xml
+
+# Яндекс
+User-agent: Yandex
+Allow: /
+Host: metall-sograda.ru
