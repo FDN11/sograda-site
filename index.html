@@ -705,6 +705,7 @@
       color: var(--dark);
       line-height: 1;
       margin-bottom: 12px;
+      white-space: nowrap;
     }
     .number-lbl {
       font-size: 15px;
@@ -844,6 +845,45 @@
       text-align: center;
       margin-top: 12px;
     }
+    .file-drop {
+      border: 1.5px dashed rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.03);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .file-drop:hover, .file-drop.drag-over {
+      border-color: var(--yellow);
+      background: rgba(255,207,61,0.05);
+    }
+    .file-drop-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .file-drop-icon { font-size: 24px; }
+    .file-drop-text { font-size: 13px; color: #aaa; font-weight: 500; }
+    .file-drop-hint { font-size: 11px; color: #555; }
+    .file-chosen {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--yellow);
+    }
+    .file-chosen-remove {
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+    }
+    .file-chosen-remove:hover { color: #c0392b; }
 
     /* ── FOOTER ── */
     footer {
@@ -1892,6 +1932,21 @@
                 <label>Комментарий</label>
                 <textarea id="f-comment" placeholder="Размеры, пожелания, сроки..."></textarea>
               </div>
+              <div class="form-group full">
+                <label>Чертёж или ТЗ (необязательно)</label>
+                <div class="file-drop" id="file-drop">
+                  <input type="file" id="f-file" accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.xlsx,.doc,.docx" style="display:none">
+                  <div class="file-drop-inner" id="file-drop-inner">
+                    <span class="file-drop-icon">📎</span>
+                    <span class="file-drop-text">Нажмите или перетащите файл</span>
+                    <span class="file-drop-hint">PDF, DWG, DXF, JPG, PNG, DOC — до 10 МБ</span>
+                  </div>
+                  <div class="file-chosen" id="file-chosen" style="display:none">
+                    <span id="file-chosen-name"></span>
+                    <button type="button" class="file-chosen-remove" id="file-remove">✕</button>
+                  </div>
+                </div>
+              </div>
             </div>
             <button type="submit" class="form-submit">Получить расчёт бесплатно →</button>
             <p class="form-privacy">Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности</p>
@@ -1948,6 +2003,72 @@
 
   <script>
     gsap.registerPlugin(ScrollTrigger);
+
+    // File upload UI
+    const fileInput   = document.getElementById('f-file');
+    const fileDrop    = document.getElementById('file-drop');
+    const fileInner   = document.getElementById('file-drop-inner');
+    const fileChosen  = document.getElementById('file-chosen');
+    const fileChosenName = document.getElementById('file-chosen-name');
+    const fileRemove  = document.getElementById('file-remove');
+
+    function showFile(file) {
+      fileInner.style.display = 'none';
+      fileChosen.style.display = 'flex';
+      fileChosenName.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' МБ)';
+    }
+    function clearFile() {
+      fileInput.value = '';
+      fileInner.style.display = 'flex';
+      fileChosen.style.display = 'none';
+    }
+
+    fileDrop.addEventListener('click', (e) => {
+      if (e.target !== fileRemove) fileInput.click();
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) showFile(fileInput.files[0]);
+    });
+    fileRemove.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearFile();
+    });
+    fileDrop.addEventListener('dragover', (e) => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
+    fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
+    fileDrop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) { fileInput.files = e.dataTransfer.files; showFile(file); }
+    });
+
+    // Upload file to Bitrix24 Disk, return URL or null
+    async function uploadFileToBitrix(file) {
+      if (file.size > 10 * 1024 * 1024) throw new Error('Файл больше 10 МБ');
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      const B24 = 'https://sograda.bitrix24.ru/rest/17/j3ir302dfmqau6j1';
+      const storResp = await fetch(`${B24}/disk.storage.getlist.json`);
+      const storData = await storResp.json();
+      const userStorage = (storData.result || []).find(s => s.ENTITY_TYPE === 'user');
+      if (!userStorage) throw new Error('Storage not found');
+      const uploadResp = await fetch(`${B24}/disk.folder.uploadfile.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: userStorage.ROOT_OBJECT.ID,
+          data: { NAME: file.name },
+          fileContent: [file.name, base64]
+        })
+      });
+      const uploadData = await uploadResp.json();
+      if (!uploadData.result) throw new Error('Upload failed');
+      return uploadData.result.DETAIL_URL || file.name;
+    }
 
     // Burger menu
     const burger = document.getElementById('burger');
@@ -2038,49 +2159,62 @@
     // Form submit
     function handleSubmit(e) {
       e.preventDefault();
-      const btn = e.target.querySelector('.form-submit');
+      const btn     = e.target.querySelector('.form-submit');
       const name    = document.getElementById('f-name').value.trim();
       const phone   = document.getElementById('f-phone').value.trim();
       const type    = document.getElementById('f-type').value;
       const comment = document.getElementById('f-comment').value.trim();
+      const file    = document.getElementById('f-file').files[0] || null;
 
-      btn.textContent = 'Отправляем...';
+      btn.textContent = file ? 'Загружаем файл...' : 'Отправляем...';
       btn.disabled = true;
       btn.style.opacity = '0.7';
 
       const B24_URL = 'https://sograda.bitrix24.ru/rest/17/j3ir302dfmqau6j1/crm.lead.add.json';
 
-      fetch(B24_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fields: {
-            TITLE:    'Заявка с сайта' + (type ? ' — ' + type : ''),
-            NAME:     name,
-            PHONE:    [{ VALUE: phone, VALUE_TYPE: 'WORK' }],
-            COMMENTS: (type ? 'Тип: ' + type + '\n' : '') + (comment || ''),
-            SOURCE_ID: 'WEB'
-          }
+      const doSend = (fileUrl) => {
+        let comments = (type ? 'Тип: ' + type + '\n' : '') + (comment || '');
+        if (fileUrl) comments += '\n\nФайл: ' + fileUrl;
+        fetch(B24_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fields: {
+              TITLE:    'Заявка с сайта' + (type ? ' — ' + type : ''),
+              NAME:     name,
+              PHONE:    [{ VALUE: phone, VALUE_TYPE: 'WORK' }],
+              COMMENTS: comments,
+              SOURCE_ID: 'WEB'
+            }
+          })
         })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.result) {
-          btn.textContent = 'Заявка отправлена ✓';
-          btn.style.background = '#296000';
+        .then(r => r.json())
+        .then(data => {
+          if (data.result) {
+            btn.textContent = 'Заявка отправлена ✓';
+            btn.style.background = '#296000';
+            btn.style.color = '#fff';
+            e.target.reset();
+            clearFile();
+            if (typeof ym !== 'undefined') ym(109215691, 'reachGoal', 'form_submit');
+          } else { throw new Error('Bitrix error'); }
+        })
+        .catch(() => {
+          btn.textContent = 'Ошибка — позвоните нам';
+          btn.style.background = '#c0392b';
           btn.style.color = '#fff';
-          e.target.reset();
-          if (typeof ym !== 'undefined') ym(109215691, 'reachGoal', 'form_submit');
-        } else {
-          throw new Error('Bitrix error');
-        }
-      })
-      .catch(() => {
-        btn.textContent = 'Ошибка — позвоните нам';
-        btn.style.background = '#c0392b';
-        btn.style.color = '#fff';
-        btn.disabled = false;
-      });
+          btn.disabled = false;
+        });
+      };
+
+      if (file) {
+        btn.textContent = 'Загружаем файл...';
+        uploadFileToBitrix(file)
+          .then(url => { btn.textContent = 'Отправляем...'; doSend(url); })
+          .catch(() => doSend(null));
+      } else {
+        doSend(null);
+      }
     }
 
 
@@ -2180,29 +2314,15 @@
         setTimeout(() => { controls.autoRotate = true; }, 2000);
       });
 
-      // Decode GLB from base64 data URL → Blob URL
-      function dataUrlToObjectUrl(dataUrl) {
-        const base64 = dataUrl.split(',')[1];
-        const bin = atob(base64);
-        const buf = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-        const blob = new Blob([buf], { type: 'model/gltf-binary' });
-        return URL.createObjectURL(blob);
-      }
-
-      // Wait for model-viewer to get its src, then load
+      // Load GLB directly by path
       function loadModel() {
-        const src = mv.getAttribute('src');
-        if (!src) { setTimeout(loadModel, 100); return; }
-        const url = dataUrlToObjectUrl(src);
-
         const dracoLoader = new THREE.DRACOLoader();
         dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
 
         const loader = new THREE.GLTFLoader();
         loader.setDRACOLoader(dracoLoader);
 
-        loader.load(url, (gltf) => {
+        loader.load('model.glb', (gltf) => {
           const model = gltf.scene;
 
           // Исправление Z-up → Y-up (CAD-экспорт)
@@ -2232,7 +2352,6 @@
           camera.position.set(0, h * 0.7, h * 2.2);
           controls.update();
 
-          URL.revokeObjectURL(url);
         });
       }
 
