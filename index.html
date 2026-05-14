@@ -1109,31 +1109,149 @@
       font-weight: 700;
     }
 
+    /* ── BURGER BUTTON ── */
+    .nav-burger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 40px;
+      height: 40px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      z-index: 200;
+    }
+    .nav-burger span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--white);
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+    .nav-burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-burger.open span:nth-child(2) { opacity: 0; }
+    .nav-burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Mobile menu drawer */
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 72px; left: 0; right: 0;
+      background: rgba(33,40,43,0.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 24px 20px 32px;
+      z-index: 99;
+      flex-direction: column;
+      gap: 0;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a, .mobile-menu button {
+      display: block;
+      padding: 16px 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu .mobile-cta {
+      margin-top: 20px;
+      background: var(--yellow);
+      color: var(--dark);
+      text-align: center;
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+    .mobile-menu .mobile-phone {
+      color: var(--yellow);
+      font-weight: 600;
+      font-size: 20px;
+      border-bottom: none !important;
+      margin-top: 8px;
+    }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 1024px) {
       .container { padding: 0 40px; }
       nav { padding: 0 40px; }
+      .nav-links, .nav-phone { display: none; }
+      .nav-burger { display: flex; }
       .cards-grid { grid-template-columns: repeat(2, 1fr); }
-      .steps-grid { grid-template-columns: 1fr; gap: 20px; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
       .numbers-grid { grid-template-columns: repeat(2, 1fr); }
       .cta-grid { grid-template-columns: 1fr; gap: 40px; }
-      .footer-top { grid-template-columns: 1fr 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 40px; }
       #hero { grid-template-columns: 1fr; padding-top: 72px; }
-      .hero-content { padding: 80px 40px; }
+      .hero-content { padding: 72px 40px 60px; }
       .hero-visual { display: none; }
       .portfolio-grid { grid-template-columns: 1fr 1fr; }
-      .port-card:first-child { grid-row: span 1; }
+      .port-card[style*="grid-row: span 2"] { grid-row: span 1; }
+      #categories, #services, #process, #portfolio, #numbers, #cta { padding: 72px 0; }
+      .services-grid { grid-template-columns: 1fr 1fr; }
+      .svc-card:first-child { grid-column: span 2; }
+      .svc-card:nth-child(7) { grid-column: span 2; }
+    }
+    @media (max-width: 768px) {
+      .container { padding: 0 32px; }
+      nav { padding: 0 32px; }
+      .hero-content { padding: 60px 32px 48px; }
+      .hero-h1 { font-size: clamp(40px, 8vw, 60px); }
+      .section-title { font-size: clamp(28px, 5vw, 40px); }
+      .steps-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; gap: 32px; }
+      .numbers-grid { grid-template-columns: repeat(2, 1fr); }
+      #categories, #services, #process, #portfolio, #numbers, #cta { padding: 60px 0; }
+      .coating-content { padding: 40px 32px; }
     }
     @media (max-width: 640px) {
       .container { padding: 0 20px; }
       nav { padding: 0 20px; }
-      .nav-links { display: none; }
+      .nav-cta { display: none; }
       .cards-grid { grid-template-columns: 1fr; }
       .numbers-grid { grid-template-columns: repeat(2, 1fr); }
       .form-grid { grid-template-columns: 1fr; }
       .form-group.full { grid-column: span 1; }
       .portfolio-grid { grid-template-columns: 1fr; }
       .footer-top { grid-template-columns: 1fr; }
+      .hero-content { padding: 48px 20px 40px; }
+      .hero-sub { font-size: 16px; }
+      .hero-stats { flex-wrap: wrap; gap: 16px; }
+      .stat-num { font-size: 26px; }
+      .services-grid { grid-template-columns: 1fr; }
+      .svc-card:first-child, .svc-card:nth-child(7) { grid-column: span 1; }
+      #categories, #services, #process, #portfolio, #numbers, #cta { padding: 48px 0; }
+      .number-val { font-size: clamp(36px, 9vw, 54px); }
+      .number-lbl { font-size: 13px; }
+      .form-box { padding: 28px 20px; }
+      .coating-content { padding: 32px 20px; }
+      .cta-advantages { gap: 10px; }
+      .footer-top { gap: 28px; }
+      .section-title { font-size: clamp(26px, 7vw, 36px); }
+    }
+    @media (max-width: 480px) {
+      .container { padding: 0 16px; }
+      nav { padding: 0 16px; }
+      .hero-h1 { font-size: clamp(32px, 9.5vw, 48px); }
+      .hero-tag { font-size: 11px; padding: 6px 12px; }
+      .hero-btns { flex-direction: column; gap: 12px; }
+      .hero-btns .btn-primary, .hero-btns .btn-outline { width: 100%; text-align: center; padding: 16px 24px; }
+      .numbers-grid { grid-template-columns: repeat(2, 1fr); }
+      .number-val { font-size: clamp(30px, 10vw, 46px); }
+      .cat-card { padding: 24px 20px; }
+      #categories, #services, #process, #portfolio, #numbers, #cta { padding: 40px 0; }
+      .form-box { padding: 24px 16px; border-radius: 20px; }
+      .section-label { font-size: 10px; }
     }
   </style>
 </head>
@@ -1166,7 +1284,18 @@
     </ul>
     <a href="tel:+78005515122" class="nav-phone">+7 (800) 551-51-22</a>
     <button class="nav-cta" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Расчёт →</button>
+    <button class="nav-burger" id="burger" aria-label="Открыть меню">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#categories" class="mobile-link">Продукция</a>
+    <a href="#portfolio" class="mobile-link">Портфолио</a>
+    <a href="#process" class="mobile-link">Как работаем</a>
+    <a href="#cta" class="mobile-link">Контакты</a>
+    <a href="tel:+78005515122" class="mobile-link mobile-phone">+7 (800) 551-51-22</a>
+    <button class="mobile-cta mobile-link" onclick="document.getElementById('cta').scrollIntoView({behavior:'smooth'})">Получить расчёт →</button>
+  </div>
 
   <!-- HERO -->
   <section id="hero">
@@ -1819,6 +1948,20 @@
 
   <script>
     gsap.registerPlugin(ScrollTrigger);
+
+    // Burger menu
+    const burger = document.getElementById('burger');
+    const mobileMenu = document.getElementById('mobile-menu');
+    burger.addEventListener('click', () => {
+      burger.classList.toggle('open');
+      mobileMenu.classList.toggle('open');
+    });
+    document.querySelectorAll('.mobile-link').forEach(link => {
+      link.addEventListener('click', () => {
+        burger.classList.remove('open');
+        mobileMenu.classList.remove('open');
+      });
+    });
 
     // Smooth scroll polyfill for Safari
     document.querySelectorAll('a[href^="#"]').forEach(a => {
